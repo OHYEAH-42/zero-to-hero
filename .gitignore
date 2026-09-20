@@ -1,0 +1,15 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 虚拟环境
+.venv/
+venv/
+
+# 环境变量和秘密信息
+.env
+.env.*
+
+# 编辑器临时文件
+.vscode/
+.idea/
