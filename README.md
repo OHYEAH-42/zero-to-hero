@@ -17,6 +17,5 @@
 ## 运行方式
 
 确保已经安装 Python，然后运行：
-
 ```powershell
 python micrograd.py
