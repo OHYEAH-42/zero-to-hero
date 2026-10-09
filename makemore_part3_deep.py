@@ -107,7 +107,6 @@ for step in range(20000):
 
     if (step+1)%1000==0:
         print(step+1,loss.item())
-
 # BatchNorm 切换到预测模式：使用运行均值和运行方差
 for layer in layers:
     if isinstance(layer, BatchNorm1d):

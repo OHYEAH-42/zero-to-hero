@@ -1,6 +1,6 @@
 import torch
 
-# 全连接层的定义
+# 全连接层的定义---------------------------------------------------------------------------------------
 class Linear:
     # 初始化全连接层，包含输入数量，输出数量，是否偏置；权重，偏置
     def __init__(self,fan_in,fan_out,bias=True):
@@ -25,7 +25,7 @@ class Linear:
             params+=[self.bias]
         return params
 
-# Tanh类的定义
+# Tanh类的定义---------------------------------------------------------------------------------------
 class Tanh:
     # 计算tanh，返回计算值
     def __call__(self,x):
@@ -36,7 +36,7 @@ class Tanh:
     def parameters(self):
         return []
 
-# BatchNormld类的定义
+# BatchNormld类的定义---------------------------------------------------------------------------------------
 class BatchNorm1d:
     def __init__(self,dim,eps=1e-5,momentum=0.1):
        self.momentum=momentum                       # 更新运行统计量时，新一批的占比
@@ -50,9 +50,14 @@ class BatchNorm1d:
 
     def __call__(self, x):
         if self.training is True:
-            # 每个神经元各自的均值、方差：[1，200]
-            bnmean=x.mean(dim=0,keepdim=True)
-            bnvar=x.var(dim=0,keepdim=True,unbiased=False)
+            # 每个神经元各自的均值、方差
+            # 如果x是二维的[B,T]，则对每一列求均值和方差，得到[1,T]；如果x是三维的[B,T,C]，则对每一列求均值和方差，得到[1,1,C]
+            if x.ndim==2:
+                reduce_dim=0;
+            elif x.ndim==3:
+                reduce_dim=(0,1)
+            bnmean=x.mean(reduce_dim,keepdim=True)
+            bnvar=x.var(reduce_dim,keepdim=True,unbiased=False)
 
             # 标准化后的结果
             hnorm=(x-bnmean)/torch.sqrt(bnvar+self.eps)     # +1e-5是一个很小的数，防止分母为0
@@ -73,3 +78,56 @@ class BatchNorm1d:
         
     def parameters(self):
         return [self.gamma,self.beta]
+
+# 相邻位置拼接层---------------------------------------------------------------------------------------
+class FlattenConsecutive:
+    # 将连续的n个位置的特征展平为一个向量
+    def __init__(self,n):
+        self.n=n
+
+    def __call__(self,x):
+        # B——样本数，T——每个样本的位置数，C——每个位置的特征数
+        B,T,C=x.shape
+        x=x.view(B,T//self.n,self.n*C)
+
+        # 如果展平后只有一个位置，则去掉该维度
+        if x.shape[1]==1:
+            x=x.squeeze(1)              # 比如得到[32,1,200]，则去掉中间的1维，得到[32,200]
+
+        return x
+
+    def parameters(self):
+        return []
+
+# 嵌入层---------------------------------------------------------------------------------------
+class Embedding:
+    def __init__(self,n_embed,dim):
+        self.weight=torch.randn((n_embed,dim))        # 随机初始化嵌入表
+
+    def __call__(self,x):
+        self.out=self.weight[x]                       # 根据输入的索引取出对应的嵌入向量
+        return self.out
+
+    def parameters(self):
+        return [self.weight]
+
+# 顺序容器,将多个层组合在一起，按顺序执行---------------------------------------------------------------------------------------
+class Sequential:
+    # layer是Linear、BatchNorm1d、Tanh等类的实例化对象，layers是一个列表，包含多个层的实例化对象
+    def __init__(self,layers):
+        self.layers=layers
+
+    # 前向传播，依次调用每一层的__call__方法
+    def __call__(self,x):
+        for layer in self.layers:
+            x=layer(x)
+        return x
+
+    # 返回所有层的参数
+    def parameters(self):
+        params=[]
+
+        for layer in self.layers:
+            params.extend(layer.parameters())
+
+        return params
