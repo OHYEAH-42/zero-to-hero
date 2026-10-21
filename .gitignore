@@ -13,3 +13,7 @@ venv/
 # 编辑器临时文件
 .vscode/
 .idea/
+
+# Downloaded model and tokenizer files
+.hf-cache/
+.compile-cache/

@@ -96,3 +96,6 @@ if __name__=="__main__":
     out=head(x)
     print("输入形状：",x.shape)
     print("输出形状：",out.shape)
+
+
+    
